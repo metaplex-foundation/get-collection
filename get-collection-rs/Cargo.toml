@@ -1,0 +1,19 @@
+[package]
+name = "get-collection"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+anyhow = "1.0.55"
+bs58 = "0.4.0"
+mpl-token-metadata = "1.2.4"
+rayon = "1.5.1"
+serde = "1.0.136"
+serde_json = "1.0.79"
+solana-account-decoder = "1.9.8"
+solana-client = "1.9.8"
+solana-program = "1.9.8"
+solana-sdk = "1.9.8"
+solana-transaction-status = "1.9.8"

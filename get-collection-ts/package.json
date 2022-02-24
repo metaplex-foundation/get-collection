@@ -1,0 +1,11 @@
+{
+  "name": "get-collection-ts",
+  "version": "1.0.0",
+  "main": "index.js",
+  "license": "MIT",
+  "dependencies": {
+    "@metaplex-foundation/mpl-token-metadata": "^1.2.4",
+    "@metaplex/js": "^4.12.0",
+    "@solana/web3.js": "^1.35.1"
+  }
+}
