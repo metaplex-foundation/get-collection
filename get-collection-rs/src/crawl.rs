@@ -3,9 +3,9 @@ use mpl_token_metadata::{state::Metadata, ID};
 use rayon::prelude::*;
 use serde::{Deserialize, Serialize};
 use serde_json;
-use solana_client::rpc_client::RpcClient;
+use solana_client::rpc_client::{GetConfirmedSignaturesForAddress2Config, RpcClient};
 use solana_program::borsh::try_from_slice_unchecked;
-use solana_sdk::{pubkey::Pubkey, signature::Signature};
+use solana_sdk::{commitment_config::CommitmentConfig, pubkey::Pubkey, signature::Signature};
 use solana_transaction_status::{
     EncodedConfirmedTransaction, EncodedTransaction, UiInstruction, UiMessage, UiParsedInstruction,
     UiTransactionEncoding,
@@ -34,15 +34,33 @@ impl Transaction {
 }
 
 pub fn crawl_txs(client: &RpcClient, collection_id: &Pubkey) -> Result<()> {
-    let signatures = client.get_signatures_for_address(&collection_id)?;
+    let mut all_signatures = Vec::new();
+    let mut signatures = client.get_signatures_for_address(&collection_id)?;
 
+    while signatures.len() > 0 {
+        let last_sig = Signature::from_str(&signatures[signatures.len() - 1].signature)?;
+        all_signatures.append(&mut signatures);
+        let config = GetConfirmedSignaturesForAddress2Config {
+            before: Some(last_sig),
+            until: None,
+            limit: None,
+            commitment: Some(CommitmentConfig::confirmed()),
+        };
+        signatures = client.get_signatures_for_address_with_config(&collection_id, config)?;
+    }
     let transactions = Arc::new(Mutex::new(Vec::new()));
 
-    signatures.par_iter().for_each(|sig| {
-        let signature = Signature::from_str(&sig.signature).unwrap();
-        let tx = client
-            .get_transaction(&signature, UiTransactionEncoding::JsonParsed)
-            .unwrap();
+    println!("Found {} signatures", all_signatures.len());
+
+    all_signatures.par_iter().for_each(|sig| {
+        let signature = Signature::from_str(&sig.signature).expect("Failed to parse signature");
+        let tx = match client.get_transaction(&signature, UiTransactionEncoding::JsonParsed) {
+            Ok(tx) => tx,
+            Err(err) => {
+                println!("Failed to get transaction: {:?}", err);
+                return;
+            }
+        };
         let transaction = extract_transaction_data(tx);
         transactions.lock().unwrap().push(transaction);
     });
