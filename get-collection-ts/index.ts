@@ -7,8 +7,11 @@ const {
 } = programs;
 
 async function main() {
-  let connection = new Connection("https://api.metaplex.com", "confirmed");
-  let collection_id = new PublicKey(process.argv.slice(2, 3)[0]);
+  // Get command line arguments
+  const args = process.argv.slice(2, 4)
+
+  let connection = new Connection(args[1] || "https://api.metaplex.com", "confirmed");
+  let collection_id = new PublicKey(args[0])
   let metaplexProgramId = "metaqbxxUerdq28cj1RbAWkYQm3ybzjb6a8bt518x1s";
 
   console.log("Getting signatures...");
