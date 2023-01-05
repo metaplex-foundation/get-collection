@@ -56,7 +56,10 @@ async function main() {
                 for (const ix of tx!.transaction.message.instructions) {
                     // Filter for setAndVerify or verify instructions in the Metaplex token metadata program
                     if (
-                        (ix.data == "K" || ix.data == "S") &&
+                        (ix.data == "K" || // VerifyCollection instruction
+                            ix.data == "S" || // SetAndVerifyCollection instruction
+                            ix.data == "X" || // VerifySizedCollectionItem instruction
+                            ix.data == "Z") && // SetAndVerifySizedCollectionItem instruction
                         accountKeys[ix.programIdIndex] == metaplexProgramId
                     ) {
                         let metadataAddressIndex = ix.accounts[0];
