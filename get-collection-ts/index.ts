@@ -1,28 +1,29 @@
-import { Connection, PublicKey } from "@solana/web3.js";
-import { programs } from "@metaplex/js";
+import { ConfirmedSignatureInfo, Connection, PublicKey } from "@solana/web3.js";
 import fs from "fs";
-import { MetadataData } from "@metaplex-foundation/mpl-token-metadata";
-const {
-  metadata: { Metadata }
-} = programs;
+import {
+  Metadata,
+  PROGRAM_ADDRESS as metaplexProgramId,
+} from "@metaplex-foundation/mpl-token-metadata";
 
 async function main() {
   // Get command line arguments
-  const args = process.argv.slice(2, 4)
+  const args = process.argv.slice(2, 4);
 
-  let connection = new Connection(args[1] || "https://api.metaplex.com", "confirmed");
-  let collection_id = new PublicKey(args[0])
-  let metaplexProgramId = "metaqbxxUerdq28cj1RbAWkYQm3ybzjb6a8bt518x1s";
+  let connection = new Connection(
+    args[1] || "https://api.metaplex.com",
+    "confirmed"
+  );
+  let collection_id = new PublicKey(args[0]);
 
   console.log("Getting signatures...");
-  let allSignatures = [];
+  let allSignatures: ConfirmedSignatureInfo[] = [];
 
   // This returns the first 1000, so we need to loop through until we run out of signatures to get.
   let signatures = await connection.getSignaturesForAddress(collection_id);
   allSignatures.push(...signatures);
   do {
     let options = {
-      before: signatures[signatures.length - 1].signature
+      before: signatures[signatures.length - 1].signature,
     };
     signatures = await connection.getSignaturesForAddress(
       collection_id,
@@ -32,7 +33,7 @@ async function main() {
   } while (signatures.length > 0);
 
   console.log(`Found ${allSignatures.length} signatures`);
-  let metadataAddresses = [];
+  let metadataAddresses: PublicKey[] = [];
   let mintAddresses = new Set<string>();
 
   console.log("Getting transaction data...");
@@ -57,7 +58,10 @@ async function main() {
         for (const ix of tx!.transaction.message.instructions) {
           // Filter for setAndVerify or verify instructions in the Metaplex token metadata program
           if (
-            (ix.data == "K" || ix.data == "S") &&
+            (ix.data == "K" || // VerifyCollection instruction
+              ix.data == "S" || // SetAndVerifyCollection instruction
+              ix.data == "X" || // VerifySizedCollectionItem instruction
+              ix.data == "Z") && // SetAndVerifySizedCollectionItem instruction
             accountKeys[ix.programIdIndex] == metaplexProgramId
           ) {
             let metadataAddressIndex = ix.accounts[0];
@@ -73,8 +77,10 @@ async function main() {
   const promises2 = metadataAddresses.map((a) => connection.getAccountInfo(a));
   const metadataAccounts = await Promise.all(promises2);
   for (const account of metadataAccounts) {
-    let metadata = await MetadataData.deserialize(account!.data);
-    mintAddresses.add(metadata.mint);
+    if (account) {
+      let metadata = await Metadata.deserialize(account!.data);
+      mintAddresses.add(metadata[0].mint.toBase58());
+    }
   }
   let mints: string[] = Array.from(mintAddresses);
   fs.writeFileSync(`${collection_id}_mints.json`, JSON.stringify(mints));
