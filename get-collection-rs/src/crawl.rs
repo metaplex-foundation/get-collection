@@ -4,11 +4,12 @@ use rayon::prelude::*;
 use serde::{Deserialize, Serialize};
 use serde_json;
 use solana_client::rpc_client::{GetConfirmedSignaturesForAddress2Config, RpcClient};
+use solana_client::rpc_config::RpcTransactionConfig;
 use solana_program::borsh::try_from_slice_unchecked;
 use solana_sdk::{commitment_config::CommitmentConfig, pubkey::Pubkey, signature::Signature};
 use solana_transaction_status::{
-    EncodedConfirmedTransactionWithStatusMeta, EncodedTransaction, UiInstruction, UiMessage, UiParsedInstruction,
-    UiTransactionEncoding,
+    EncodedConfirmedTransactionWithStatusMeta, EncodedTransaction, UiInstruction, UiMessage,
+    UiParsedInstruction, UiTransactionEncoding,
 };
 use std::{
     collections::HashSet,
@@ -54,7 +55,12 @@ pub fn crawl_txs(client: &RpcClient, collection_id: &Pubkey) -> Result<()> {
 
     all_signatures.par_iter().for_each(|sig| {
         let signature = Signature::from_str(&sig.signature).expect("Failed to parse signature");
-        let tx = match client.get_transaction(&signature, UiTransactionEncoding::JsonParsed) {
+        let config = RpcTransactionConfig {
+            encoding: Some(UiTransactionEncoding::JsonParsed),
+            commitment: Some(CommitmentConfig::confirmed()),
+            max_supported_transaction_version: Some(0),
+        };
+        let tx = match client.get_transaction_with_config(&signature, config) {
             Ok(tx) => tx,
             Err(err) => {
                 println!("Failed to get transaction: {:?}", err);
