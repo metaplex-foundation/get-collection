@@ -7,7 +7,7 @@ use solana_client::rpc_client::{GetConfirmedSignaturesForAddress2Config, RpcClie
 use solana_program::borsh::try_from_slice_unchecked;
 use solana_sdk::{commitment_config::CommitmentConfig, pubkey::Pubkey, signature::Signature};
 use solana_transaction_status::{
-    EncodedConfirmedTransaction, EncodedTransaction, UiInstruction, UiMessage, UiParsedInstruction,
+    EncodedConfirmedTransactionWithStatusMeta, EncodedTransaction, UiInstruction, UiMessage, UiParsedInstruction,
     UiTransactionEncoding,
 };
 use std::{
@@ -102,7 +102,7 @@ fn is_verify_tx(tx: &Transaction) -> bool {
     tx.program_id == ID.to_string() && (tx.data == "S" || tx.data == "K")
 }
 
-fn extract_transaction_data(tx: EncodedConfirmedTransaction) -> Transaction {
+fn extract_transaction_data(tx: EncodedConfirmedTransactionWithStatusMeta) -> Transaction {
     let mut transaction = Transaction::new();
 
     let encoded_tx = tx.transaction.transaction;
