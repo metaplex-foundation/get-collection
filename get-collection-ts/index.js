@@ -1,7 +1,12 @@
 import { PublicKey } from "@solana/web3.js";
 import fs from "fs";
+import dotenv from "dotenv";
 
-const url = `https://mainnet.helius-rpc.com/?api-key=<api-key>`;
+dotenv.config();
+
+const RPC_URL = process.env.RPC_URL
+const API_KEY = process.env.API_KEY
+const url = `${RPC_URL}?api-key=${API_KEY}`;
 
 const getAssetsByGroup = async () => {
   const args = process.argv.slice(2, 4);
